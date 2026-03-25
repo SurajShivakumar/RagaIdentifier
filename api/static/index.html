@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Raga Identifier - Carnatic Music Analysis</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 800px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #667eea;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .supported-ragas {
+            text-align: center;
+            background: #f8f9ff;
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            border: 2px solid #e0e0ff;
+        }
+
+        .supported-ragas-title {
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .model-selector {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9ff;
+            border-radius: 10px;
+            border: 2px solid #e0e0ff;
+        }
+
+        .model-option {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            padding: 12px 20px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            background: white;
+            border: 2px solid transparent;
+        }
+
+        .model-option:hover {
+            background: #e8ebff;
+            border-color: #667eea;
+        }
+
+        .model-option input[type="radio"] {
+            margin-right: 10px;
+            cursor: pointer;
+            width: 18px;
+            height: 18px;
+        }
+
+        .model-option input[type="radio"]:checked + .radio-label {
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .radio-label {
+            font-size: 0.95em;
+            color: #333;
+            cursor: pointer;
+        }
+
+        .raga-list {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .raga-badge {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.95em;
+        }
+
+        .drop-zone {
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 60px 40px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            background: #f8f9ff;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .drop-zone:hover {
+            background: #f0f3ff;
+            border-color: #764ba2;
+            transform: translateY(-2px);
+        }
+
+        .drop-zone.drag-over {
+            background: #e8ebff;
+            border-color: #764ba2;
+            border-width: 4px;
+        }
+
+        .drop-zone-icon {
+            font-size: 60px;
+            margin-bottom: 20px;
+        }
+
+        .drop-zone-text {
+            font-size: 1.3em;
+            color: #667eea;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .drop-zone-subtext {
+            color: #999;
+            font-size: 0.95em;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .file-info {
+            background: #f8f9ff;
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            display: none;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .file-info.show {
+            display: flex;
+        }
+
+        .file-icon {
+            font-size: 30px;
+        }
+
+        .file-details {
+            flex: 1;
+        }
+
+        .file-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .file-size {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .remove-file {
+            background: #ff4757;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+            font-size: 18px;
+            transition: all 0.3s ease;
+        }
+
+        .remove-file:hover {
+            background: #ff3838;
+            transform: scale(1.1);
+        }
+
+        .analyze-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 15px 40px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+            transition: all 0.3s ease;
+            display: none;
+        }
+
+        .analyze-btn.show {
+            display: block;
+        }
+
+        .analyze-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .analyze-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 30px;
+            display: none;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .results {
+            margin-top: 30px;
+            display: none;
+        }
+
+        .results.show {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .result-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px 10px 0 0;
+            text-align: center;
+        }
+
+        .main-raga {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .confidence {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .predictions {
+            background: #f8f9ff;
+            padding: 20px;
+            border-radius: 0 0 10px 10px;
+        }
+
+        .spectrogram-section {
+            margin-top: 20px;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .spectrogram-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+        }
+
+        .spectrogram-img {
+            width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .audio-info {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f8f9ff;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-around;
+        }
+
+        .info-item {
+            text-align: center;
+        }
+
+        .info-label {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .info-value {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .prediction-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+        }
+
+        .prediction-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .prediction-name {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .prediction-score {
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .progress-bar {
+            background: #e0e0e0;
+            height: 6px;
+            border-radius: 3px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.5s ease;
+        }
+
+        .error {
+            background: #ff4757;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .error.show {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .method-toggle {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            justify-content: center;
+        }
+
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎵 Raga Identifier</h1>
+        <p class="subtitle">Upload your Carnatic music composition for instant raga detection</p>
+
+        <div class="model-selector">
+            <label class="model-option">
+                <input type="radio" name="model" value="ml" id="mlModel" checked>
+                <span class="radio-label">🧠 ML Model (Fast - Mohanam, Shankarabharanam)</span>
+            </label>
+            <label class="model-option">
+                <input type="radio" name="model" value="rule-based" id="ruleModel">
+                <span class="radio-label">📐 Rule-Based (Slow - Mayamalavagowla, Shankarabharanam)</span>
+            </label>
+        </div>
+
+        <div class="drop-zone" id="dropZone">
+            <div class="drop-zone-icon">🎼</div>
+            <div class="drop-zone-text">Drag & drop your audio file here</div>
+            <div class="drop-zone-subtext">or click to browse (MP3, WAV, M4A, FLAC)</div>
+            <input type="file" id="fileInput" accept=".mp3,.wav,.m4a,.flac">
+        </div>
+
+        <div class="file-info" id="fileInfo">
+            <div class="file-icon">🎵</div>
+            <div class="file-details">
+                <div class="file-name" id="fileName"></div>
+                <div class="file-size" id="fileSize"></div>
+            </div>
+            <button class="remove-file" id="removeFile">×</button>
+        </div>
+
+        <button class="analyze-btn" id="analyzeBtn">Analyze Raga</button>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <div>Analyzing your composition...</div>
+        </div>
+
+        <div class="error" id="error"></div>
+
+        <div class="results" id="results">
+            <div class="result-header">
+                <div class="main-raga" id="mainRaga"></div>
+                <div class="confidence" id="mainConfidence"></div>
+            </div>
+            <div class="predictions">
+                <div class="prediction-title">Top Predictions</div>
+                <div id="predictionsList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedFile = null;
+
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileName = document.getElementById('fileName');
+        const fileSize = document.getElementById('fileSize');
+        const removeFileBtn = document.getElementById('removeFile');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const loading = document.getElementById('loading');
+        const results = document.getElementById('results');
+        const error = document.getElementById('error');
+
+        // Click to browse
+        dropZone.addEventListener('click', () => fileInput.click());
+
+        // File input change
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        // Drag and drop
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('drag-over');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('drag-over');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+            
+            if (e.dataTransfer.files.length > 0) {
+                handleFile(e.dataTransfer.files[0]);
+            }
+        });
+
+        // Handle file
+        function handleFile(file) {
+            const validTypes = ['audio/mpeg', 'audio/wav', 'audio/mp4', 'audio/x-m4a', 'audio/flac'];
+            const validExtensions = ['.mp3', '.wav', '.m4a', '.flac'];
+            const fileExt = '.' + file.name.split('.').pop().toLowerCase();
+            
+            if (!validTypes.includes(file.type) && !validExtensions.includes(fileExt)) {
+                showError('Please upload a valid audio file (MP3, WAV, M4A, or FLAC)');
+                return;
+            }
+
+            selectedFile = file;
+            fileName.textContent = file.name;
+            fileSize.textContent = formatFileSize(file.size);
+            
+            fileInfo.classList.add('show');
+            analyzeBtn.classList.add('show');
+            results.classList.remove('show');
+            error.classList.remove('show');
+        }
+
+        // Remove file
+        removeFileBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            selectedFile = null;
+            fileInput.value = '';
+            fileInfo.classList.remove('show');
+            analyzeBtn.classList.remove('show');
+            results.classList.remove('show');
+        });
+
+        // Analyze button
+        analyzeBtn.addEventListener('click', async () => {
+            if (!selectedFile) return;
+
+            // Reset UI
+            loading.classList.add('show');
+            analyzeBtn.disabled = true;
+            results.classList.remove('show');
+            error.classList.remove('show');
+
+            try {
+                const formData = new FormData();
+                formData.append('file', selectedFile);
+
+                // Get selected model
+                const selectedModel = document.querySelector('input[name="model"]:checked').value;
+                const endpoint = selectedModel === 'ml' 
+                    ? 'http://localhost:8000/predict' 
+                    : 'http://localhost:8000/predict/rule-based';
+
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || 'Analysis failed');
+                }
+
+                const data = await response.json();
+                displayResults(data);
+
+            } catch (err) {
+                showError(err.message);
+            } finally {
+                loading.classList.remove('show');
+                analyzeBtn.disabled = false;
+            }
+        });
+
+        // Display results
+        function displayResults(data) {
+            const mainRaga = document.getElementById('mainRaga');
+            const mainConfidence = document.getElementById('mainConfidence');
+            const predictionsList = document.getElementById('predictionsList');
+
+            if (data.predicted_raga) {
+                mainRaga.textContent = data.predicted_raga;
+                mainConfidence.textContent = `${(data.confidence * 100).toFixed(1)}% confidence`;
+            } else if (data.best_match) {
+                mainRaga.textContent = data.best_match.raga;
+                mainConfidence.textContent = `${(data.best_match.score * 100).toFixed(1)}% match`;
+            }
+
+            // Display top predictions
+            predictionsList.innerHTML = '';
+            const predictions = data.top_predictions || data.top_matches || [];
+            
+            predictions.forEach(pred => {
+                const item = document.createElement('div');
+                item.className = 'prediction-item';
+                
+                const name = pred.raga || pred[0];
+                const score = pred.score || pred[1];
+                
+                item.innerHTML = `
+                    <div>
+                        <div class="prediction-name">${name}</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${score * 100}%"></div>
+                        </div>
+                    </div>
+                    <div class="prediction-score">${(score * 100).toFixed(1)}%</div>
+                `;
+                
+                predictionsList.appendChild(item);
+            });
+
+            // Add spectrogram if available
+            if (data.spectrogram) {
+                const spectrogramSection = document.createElement('div');
+                spectrogramSection.className = 'spectrogram-section';
+                spectrogramSection.innerHTML = `
+                    <div class="spectrogram-title">📊 Mel-Spectrogram Visualization</div>
+                    <img src="${data.spectrogram}" alt="Mel Spectrogram" class="spectrogram-img">
+                    ${data.audio_info ? `
+                        <div class="audio-info">
+                            <div class="info-item">
+                                <div class="info-label">Duration</div>
+                                <div class="info-value">${data.audio_info.duration.toFixed(1)}s</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">Sample Rate</div>
+                                <div class="info-value">${data.audio_info.sample_rate} Hz</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">Method</div>
+                                <div class="info-value">${data.method || 'CNN'}</div>
+                            </div>
+                        </div>
+                    ` : ''}
+                `;
+                predictionsList.appendChild(spectrogramSection);
+            }
+
+            results.classList.add('show');
+        }
+
+        // Show error
+        function showError(message) {
+            error.textContent = message;
+            error.classList.add('show');
+            setTimeout(() => error.classList.remove('show'), 5000);
+        }
+
+        // Format file size
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+        }
+    </script>
+</body>
+</html>
